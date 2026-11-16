@@ -1,0 +1,91 @@
+Design Specification
+1. Service Boundary
+
+A single RegistrationService handles enrollment, dropping, waitlist management, and promotion for one course offering.
+
+Main components:
+- CourseOffering — course ID and capacity.
+- Learner — learner ID and prerequisite status.
+- RegistrationService — registration and waitlist logic.
+- CourseRegistrationCli — simple interface for manual testing.
+
+2. Data and API Design
+
+The application uses an in-memory store:
+
+- Map<String, RegistrationStatus> — current learner registration state.
+- Queue<String> — FIFO waitlist.
+- Map<String, Learner> — learner prerequisite information.
+
+3. Main operations:
+
+enroll(learnerId)
+drop(learnerId)
+updateEligibility(learnerId, eligible)
+getEnrolledLearners()
+getWaitlistedLearners()
+
+
+4. Enrollment and Capacity Rules
+
+- A learner can have only one registration state.
+- A learner cannot be both enrolled and waitlisted.
+- Enrolled learners cannot exceed course capacity.
+- Eligible learners are enrolled if a seat is available.
+- If the course is full, eligible learners join the waitlist.
+- Ineligible learners cannot enroll or join the waitlist.
+- Duplicate enrollment/waitlist requests do not create duplicate records.
+
+
+5. Waitlist Promotion
+
+The waitlist follows FIFO order.
+
+- When an enrolled learner drops, the service checks the waitlist and promotes the first currently eligible learner.
+- Ineligible learners are skipped but remain on the waitlist. Eligibility is checked again during promotion.
+- Changing the eligibility of an already-enrolled learner does not automatically remove them.
+
+
+               Course Registration
+                           │
+                           ▼
+                  ┌──────────────────┐
+                  │ RegistrationService│
+                  └────────┬─────────┘
+                           │
+          ┌────────────────┼────────────────┐
+          ▼                ▼                ▼
+     Enrollment          Drop          Waitlist
+          │                │                │
+          ▼                ▼                ▼
+   Check eligibility   Free seat      FIFO Queue
+          │                │                │
+          ▼                ▼                ▼
+   Check capacity ───► Promote first eligible
+          │
+     ┌────┴────┐
+     ▼         ▼
+  Enrolled   Waitlisted
+
+6. Concurrency and Persistence
+
+- State-changing operations are synchronized so that checking capacity and updating registration happen atomically. This prevents concurrent requests from exceeding course capacity.
+
+
+7. Key Assumptions
+
+- Only one course offering is supported.
+- Prerequisite eligibility is represented by a simple boolean.
+- Eligibility is checked during enrollment and promotion.
+- Waitlisted learners can explicitly drop from the waitlist.
+- Dropping a waitlisted learner does not trigger promotion.
+
+
+8. Trade-offs
+- Map and Queue because the assignment is small and bounded. But data is lost when the application stops.
+- When promoting, we may scan the queue until we find an eligible learner.Promotion can be O(n), but the implementation stays simple and is completely reasonable for one course.
+- We use synchronized methods for state-changing operations.Simple and safe for this scope, rather than introducing more complex locking/concurrent data structures.
+
+
+
+

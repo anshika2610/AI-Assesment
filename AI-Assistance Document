@@ -1,0 +1,62 @@
+1. Data Structure Selection
+
+Prompt used:
+I am building a single-course registration system where learners can enroll if they satisfy the prerequisite, join a waitlist when the course is full, and be promoted when a seat becomes available. Duplicate registrations must be prevented and the waitlist must follow FIFO order. What data structures would be suitable for maintaining registration state and the waitlist? Compare options such as LinkedHashMap, PriorityQueue, and Queue, including the time-complexity tradeoffs for duplicate checks and waitlist promotion.
+
+AI response summary:
+AI suggested that a LinkedHashMap could maintain registration state while preserving insertion order, and a `PriorityQueue` could support ordered promotion. However, these added complexity that was not necessary for the single-course FIFO requirement.
+
+Decision: Edited/Rejected in favor of a simpler approach.
+I chose a `Map<String, RegistrationStatus>` for registration state and a `Queue<String>` (`ArrayDeque`) for the waitlist. The queue directly represents FIFO behavior and keeps the implementation simple. Promotion may require scanning the queue for the first eligible learner, making it **O(n)** in the worst case, which is acceptable for the bounded assignment.
+
+
+2. Eligibility Check
+
+Prompt used:
+I am building a single-course registration system where a learner must satisfy a prerequisite to enroll. If the course is full, only eligible learners should be allowed to join the FIFO waitlist. Eligibility may also change while a learner is waiting. Where should prerequisite eligibility be checked in the registration flow? Apart from the initial enrollment and waitlist promotion checks, are there any other points where eligibility needs to be validated.
+
+AI response summary:
+AI suggested keeping eligibility validation at the points where the learner's registration state can change: before enrollment/waitlisting and again during promotion. It also highlighted that eligibility should not be automatically re-checked to remove an already-enrolled learner if their eligibility later changes.It started to suggest to add different conditions for checking eligibility.
+
+Decision: Partially Accepted.
+
+Design decision:
+Eligibility check position was accepted but building conditions for eligibility check was rejected as we don't want to build a check engine for this one.
+
+
+3. Drop and Promotion Flow
+
+Prompt used:
+I have listed the functions that should happen when an enrolled learner drops. Can you review the flow and identify if any additional state change or step is needed when a waitlisted learner is promoted?
+
+AI response summary:
+AI identified that the promoted learner was being moved to ENROLLED but was not explicitly being removed from the waitlist.
+
+Decision: Accepted.
+
+I accepted the suggestion to remove the promoted learner from the waitlist because the learner should not exist in both states. I rejected the additional eligibility check after enrollment because eligibility had already been verified immediately before promotion, making another check unnecessary.
+
+4. Writing Test case and some basic syntax
+
+ I have implemented a single-course registration system with prerequisite eligibility, a fixed course capacity, and a FIFO waitlist. Please write focused unit tests covering these scenarios:
+
+- Enrollment when a seat is available.
+- Enrollment failure when prerequisite fails.
+- Eligible learner joining the waitlist when the course is full.
+- Duplicate enrollment request should not create another registration.
+- Duplicate waitlist request should not create another waitlist entry.
+- FIFO ordering should be maintained during promotion.
+- Dropping an enrolled learner should free a seat and promote the first eligible waitlisted learner.
+- If the first learner in the waitlist is currently ineligible, they should be skipped and the next eligible learner should be promoted.
+- If no waitlisted learner is eligible, the seat should remain available.
+- Dropping a waitlisted learner should remove them from the waitlist without triggering promotion.
+
+
+Additional Test case suggested and added by AI
+- Add a concurrency test where multiple learners attempt to enroll at the same time and verify that course capacity is never exceeded.
+- A learner should never be both enrolled and waitlisted.
+- Repeated or invalid drop requests should not corrupt the registration state.
+
+Please note AI was  used to write test cases, readme and basic class models and repetitive codes for faster execution.Every Code was reviewed before execution.
+
+
